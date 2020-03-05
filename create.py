@@ -17,6 +17,132 @@ import time
 import wordcloud
 from PIL import Image,ImageTk
 
+def originaltext():
+    global text  #让此处的text被其他地方调用
+    fd=tkinter.filedialog.askopenfilename()
+    try:
+        txt=open(fd,"r").read()
+    except UnicodeDecodeError:
+        txt=open(fd,"r",encoding="utf-8").read()
+    textbox.insert(tk.INSERT,txt)
+    text=getText(txt)   #读入文件后进行相应的处理
+#文本输入及初步处理函数
+def getText(txt):
+    #txt=open(r"E:\大一下2019春\python\大作业 文本编辑器\样例3.txt","r",encoding='utf-8').read()#encoding一句在开样例三
+    #txt=open(r"E:\大一下2019春\python\大作业 文本编辑器\样例2.txt","r").read()
+    txt=txt.lower()
+    for ch in '!"#$%()*+,-./:;<=>?@[\\]^_`{|}~\'–’“”0123456789':
+        txt=txt.replace(ch,"")
+    return txt
+#text=getText(txt)
+def save():
+    global text
+    txt=textbox.get(1.0,tk.END)
+    text=getText(txt)
+stopw=open(r"E:\大一下2019春\python\大作业 文本编辑器\停用词表.txt","r").read()
+stopwords=stopw.split()
+def modifiedtext(text):
+    textbox.delete(1.0,tk.END)
+    textbox.insert(tk.INSERT,text)  #INSERT表示光标位置加入
+#清除函数
+def clear():
+    ans=tkinter.messagebox.askokcancel("Hint","Are you sure to clear?")
+    if ans:
+        textbox.delete(1.0,tk.END)
+#词频统计函数
+def frequency(text):
+    words=text.split()
+    counts={}
+    for word in words:
+        counts[word]=counts.get(word,0)+1
+    items=list(counts.items())
+    items.sort(key=lambda x:x[1],reverse=True)
+    for i in range(len(items)):
+        word,count=items[i]
+        print("{0:<15}{1:>5}".format(word,count)) 
+    print("英文单词的总数为:",len(words))
+    #在GUI中输出
+    cipin=tk.Tk()
+    cipin.title("词频统计结果")
+    cipin.geometry("400x300")
+    textbox1 = tk.Text(cipin)
+    textbox1.place(x=0,y=0,width=400,height=300)
+    ybar=tk.Scrollbar(cipin,orient=tk.VERTICAL)
+    ybar.config(command=textbox1.yview)
+    textbox1.config(yscrollcommand=ybar.set) 
+    ybar.pack(side=tk.RIGHT,fill=tk.Y)  #fill充满y轴
+    #在IPython环境中输出
+    for i in range(len(items)):
+        word,count=items[i]
+        ch1="{0:<15}{1:>5}".format(word,count)+"\n"
+        textbox1.insert(tk.INSERT,ch1)
+    ch2="英文单词的总数为:"+str(len(words))
+    textbox1.insert(tk.INSERT,ch2)
+#统计字符数
+def strlong():
+    printnum1=str(len(textbox.get(1.0,tk.END)))  #包括换行符
+    #字数统计标签
+    labelNum1=tk.Label(top,     
+                      text="字符统计: "+printnum1,
+                      justify=tk.RIGHT,
+                      width=80) 
+    labelNum1.place(x=10,y=550,width=125,height=20)
+#统计单词数
+def wordlong():
+    caltxt=textbox.get(1.0,tk.END)
+    words2=caltxt.split()
+    rlt=len(words2)
+    #字数统计标签
+    labelNum2=tk.Label(top,     
+                      text="词数统计: "+str(rlt),
+                      justify=tk.RIGHT,
+                      width=80) 
+    labelNum2.place(x=10,y=575,width=125,height=20)
+#绘制柱状图和云图
+def draw(text,stopwords):
+    words=text.split()
+    counts={}
+    for word in words:
+        if word not in stopwords:
+            counts[word]=counts.get(word,0)+1
+    items=list(counts.items())
+    items.sort(key=lambda x:x[1],reverse=True)
+    drawords=[];nums=[]
+    for i in range(6):
+        word,count=items[i]
+        drawords.append(word);nums.append(count)
+        print("{0:<15}{1:>5}".format(word,count)) 
+    color = tkinter.simpledialog.askstring('Hint','Please enter the graphic color')
+    plt.rcParams['font.sans-serif']=['SimHei'] #用来正常显示中文标签
+    plt.rcParams['axes.unicode_minus']=False #用来正常显示负号
+    ind = np.arange(1,7,1)
+    width = 0.75
+    plt.bar(ind, nums, width=width, color=color, label=u'关键词数目')
+    plt.ylabel(u'nums')
+    plt.xlabel(u'words')
+    plt.title(u'词频统计表')
+    plt.xticks(ind,drawords)
+    plt.legend()
+    plt.savefig(r"bar.jpg")
+    plt.show()  #从哪蹦出来的orz Ipython中没了？？？
+    '''
+    root=tk.Tk()
+    root.geometry("400x300")
+    image =Image.open('bar.png')
+    img =ImageTk.PhotoImage(image)
+    canvas = tk.Canvas(root, width = image.width ,height = image.height, bg = 'white')
+    canvas.create_image(0,0,image = img,anchor="nw")
+    canvas.pack()
+    '''
+    #只能有一个tk()存在哦  
+def drawcloud(text):
+    w=wordcloud.WordCloud(font_path="msyh.ttc",
+                          max_words=20,
+                          width=1000,height=700,
+                          background_color="white")
+    w.generate(text)
+    w.to_file("wordcloud.jpg")
+    tkinter.messagebox.showinfo("Hint","Successfully generated!")
 #计时功能
 start=time.perf_counter()
 #主程序
