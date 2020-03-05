@@ -143,6 +143,151 @@ def drawcloud(text):
     w.generate(text)
     w.to_file("wordcloud.jpg")
     tkinter.messagebox.showinfo("Hint","Successfully generated!")
+#文本高亮
+def highlight():
+    textbox.tag_add("highlight",tk.SEL_FIRST,tk.SEL_LAST)
+    textbox.tag_config("highlight",background="yellow",foreground="red")
+def cancellight():
+    reprint=textbox.get("1.0",tk.END)
+    textbox.delete("1.0",tk.END)
+    textbox.insert(tk.INSERT,reprint)
+    #textbox.tag_add("highlight",tk.SEL_FIRST,tk.SEL_LAST)
+    #textbox.tag_config("highlight",background="white",foreground="black")
+#一下三个函数共同完成查找功能
+#将位置转换为元祖类型
+def getindex(text,index):
+    #print(textbox.index(index))
+    return tuple(map(int,str.split(textbox.index(index),".")))
+def wordlight(pos,speword,specolor):
+    op='+'+str(len(speword))+'c'
+    textbox.tag_add("highlight_word",pos,pos+op)
+    textbox.tag_config("highlight_word",background=specolor,foreground="black")
+def searchword():
+    start="1.0"   
+    speword = tkinter.simpledialog.askstring('Hint','Please enter the word')    
+    specolor = tkinter.simpledialog.askstring('Hint','Please enter the color')
+    while True:
+        pos=textbox.search(speword,start,stopindex=tk.END)
+        if not pos:  #返回起始位
+            break
+        #print("位置是:",getindex(textbox,pos))
+        wordlight(pos,speword,specolor)
+        start=pos+'+1c'
+def searchword0():
+    speword = tkinter.simpledialog.askstring('Hint','Please enter the word')
+    it=re.finditer("[\s]*"+speword+"[^a-z]",text,re.I)
+    #GUI前期绘制
+    find=tk.Tk()
+    find.title("查找结果")
+    find.geometry("400x300")
+    textbox2 = tk.Text(find)
+    textbox2.place(x=0,y=0,width=400,height=300)
+    ybar=tk.Scrollbar(find,orient=tk.VERTICAL)
+    ybar.config(command=textbox2.yview)
+    textbox2.config(yscrollcommand=ybar.set) 
+    ybar.pack(side=tk.RIGHT,fill=tk.Y)  #fill充满y轴
+    i=0
+    for match in it:
+        i+=1
+        a=match.start()
+        b=match.end()
+        ch="第{}个{}的位置为:{}字符——{}字符".format(i,speword,a+1,b-1)+"\n"
+        textbox2.insert(tk.INSERT,ch)
+        print("第{}个{}的位置为:{}字符——{}字符".format(i,speword,a+1,b-1))
+def change(text):
+    text=" "+text[:-1]+" "
+    old = tkinter.simpledialog.askstring('Hint','Please enter the old word')
+    new = tkinter.simpledialog.askstring('Hint','Please enter the new word')
+    #text=re.sub("[\s]*"+old+"[^a-z]"," "+new+" ",text,re.I)
+    old=" "+old+" ";new=" "+new+" "
+    text=text.replace(old,new)
+    text=text.strip()
+    textbox.delete(1.0,tk.END)
+    textbox.insert(tk.INSERT,text)
+    #注意：其他地方的text未被修改！用后若要保留文本要按保存
+    #写写如何处理aaa aaasss的过程 考虑段落首尾
+def click163(event):
+    webbrowser.open("http://mail.163.com/")
+def link163():
+    textbox.insert("1.0","我使用163邮件服务器\n")
+    textbox.tag_add("link163","1.3","1.6")
+    textbox.tag_config("link163",foreground="blue",underline=True)
+def click126(event):
+    webbrowser.open("http://mail.126.com/")
+def link126():
+    textbox.insert("1.0","我使用126邮件服务器\n")
+    textbox.tag_add("link126","1.3","1.6")
+    textbox.tag_config("link126",foreground="blue",underline=True)
+#定义键盘操作回调函数,绑定键盘操作
+def key_callback(event):
+    textbox.edit_separator()
+#定义左击回调函数，绑定左击操作    
+#def left_callback(event):
+ #   textbox.edit_separator()
+#撤回
+def undo_callback():
+    textbox.edit_undo()
+#恢复
+def redo_callback():
+    textbox.edit_redo()
+#与链接绑定
+def show_hand_cursor(event):
+    textbox.config(cursor="arrow")
+def show_arrow_cursor(event):
+    textbox.config(cursor="xterm")
+#保存导出文件
+def onSave():
+    filename = tkinter.filedialog.asksaveasfilename()
+    if filename:
+      alltext=textbox.get(1.0,tk.END)           
+      open(filename, 'w').write(alltext)
+      tkinter.messagebox.showinfo("Hint","Successfully saved!")
+def caltime():
+    end=time.perf_counter()
+    dtime=float(end-start)
+    if dtime>=3600:
+        q1=dtime//3600;r1=dtime%3600
+        q2=int(r1//60);r2=int(r1%60)
+        printtime=str(q1)+"(h):"+str(q2)+"(m):"+str(r2)+"(s)"
+    elif dtime>=60:
+        q1=int(dtime//60);r1=int(dtime%60)
+        printtime=str(q1)+"(m):"+str(r1)+"(s)"
+    else:
+        printtime=str(round(dtime,2))+"(s)"  
+    labelTime=tk.Label(top,     
+                      text="时间统计: "+printtime,
+                      justify=tk.RIGHT,
+                      width=80) 
+    labelTime.place(x=300,y=550,width=200,height=20)
+#计时功能
+start=time.perf_counter()
+#主程序
+top = tk.Tk()   #Toplevel
+top.geometry("625x600")
+top.resizable(False,False)
+top.title("简易的文本编辑器")
+#创建文本框
+textbox = tk.Text(top,undo=True,maxundo=20)
+textbox.place(x=5,y=50,width=600,height=500)
+
+#插入一个分隔符到存放操作记录的栈中，用于表示已经完成一次完整的操作
+textbox.edit_separator()
+#将键盘鼠标操作事件“<Key><Button-1>”与回调函数***_callback绑定
+textbox.bind("<Key>",key_callback)
+#textbox.bind("<Button-1>",left_callback)
+#链接效果163
+textbox.tag_bind("link163","<Enter>",show_hand_cursor)
+textbox.tag_bind("link163","<Button-1>",click163)
+textbox.tag_bind("link163","<Leave>",show_arrow_cursor)
+#链接效果126
+textbox.tag_bind("link126","<Enter>",show_hand_cursor)
+textbox.tag_bind("link126","<Button-1>",click126)
+textbox.tag_bind("link126","<Leave>",show_arrow_cursor)
+
+ybar=tk.Scrollbar(top,orient=tk.VERTICAL)
+ybar.config(command=textbox.yview)
+textbox.config(yscrollcommand=ybar.set) 
+ybar.pack(side=tk.RIGHT,fill=tk.Y)
 #计时功能
 start=time.perf_counter()
 #主程序
